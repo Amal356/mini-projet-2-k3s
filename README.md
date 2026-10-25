@@ -23,3 +23,15 @@ git status -sb
 
 ![Phase 0 – Création du dépôt Git et premier push](docs/img/00-git-push.png)
 
+
+### Phase 0 – Environnement : cluster et Docker pilotés depuis PowerShell
+
+Les commandes sont lancées depuis le shell Windows : kubectl pilote le cluster k3s (3 nœuds Ready) et le contexte Docker k3s-master pilote le moteur Docker de la VM.
+
+```powershell
+kubectl get nodes -o wide
+docker context ls
+```
+
+![Phase 0 – Environnement : cluster et Docker pilotés depuis PowerShell](docs/img/01-environnement.png)
+

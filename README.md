@@ -1,4 +1,4 @@
-﻿# Mini-projet 2 – Application trois niveaux sécurisée et persistante
+# Mini-projet 2 – Application trois niveaux sécurisée et persistante
 
 **Réalisé par :** Jemli Amal (2ème année Master DevOps et Cloud Computing, ISET Tozeur)
 
@@ -192,6 +192,18 @@ kubectl delete pod test-defaults
 
 
 
+### Phase 3 – ConfigMap et Secret
+
+Les réglages non sensibles sont dans le ConfigMap app-config. Les identifiants de la base sont dans le Secret db-credentials, créé directement dans le cluster et jamais versionné dans Git.
+
+```powershell
+kubectl get configmap app-config -n taches -o yaml
+kubectl get secret db-credentials -n taches
+kubectl get secret db-credentials -n taches -o jsonpath='{.data.POSTGRES_USER}' | ForEach-Object { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
+```
+
+![Phase 3 – ConfigMap et Secret](docs/img/16-configmap-secret.png)
+
 ### Phase 4 – Base PostgreSQL en StatefulSet avec volume persistant
 
 La base tourne dans le Pod db-0 d'un StatefulSet. Son disque de 1 Gi (data-db-0, StorageClass local-path) est lié au Pod et survit à sa suppression. Le Service headless db donne à la base un nom stable.
@@ -204,16 +216,4 @@ kubectl exec db-0 -n taches -- psql -U app -d taches -c '\conninfo'
 
 ![Phase 4 – Base PostgreSQL en StatefulSet avec volume persistant](docs/img/17-base-statefulset.png)
 
-
-### Phase 3 – ConfigMap et Secret
-
-Les réglages non sensibles sont dans le ConfigMap app-config. Les identifiants de la base sont dans le Secret db-credentials, créé directement dans le cluster et jamais versionné dans Git.
-
-```powershell
-kubectl get configmap app-config -n taches -o yaml
-kubectl get secret db-credentials -n taches
-kubectl get secret db-credentials -n taches -o jsonpath='{.data.POSTGRES_USER}' | ForEach-Object { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
-```
-
-![Phase 3 – ConfigMap et Secret](docs/img/16-configmap-secret.png)
 

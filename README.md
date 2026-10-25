@@ -147,3 +147,41 @@ docker push "$U/taches-frontend:1.0.0"
 ![Phase 1 – Nettoyage des tests et publication des images sur Docker Hub](docs/img/11-push-images.png)
 
 
+
+### Phase 1 – Point de contrôle : l'image démarre sur le cluster
+
+```powershell
+kubectl run test --image=amal878/taches-api:1.0.0 --restart=Never
+kubectl get pod test -o wide
+kubectl logs test
+kubectl delete pod test
+```
+
+![Phase 1 – Point de contrôle : l'image démarre sur le cluster](docs/img/12-test-image-cluster.png)
+
+
+### Phase 2 – Namespace, ResourceQuota et LimitRange
+
+```powershell
+kubectl apply -f k8s\00-namespace\00-namespace.yaml
+kubectl apply -f k8s\00-namespace\10-resourcequota.yaml
+kubectl apply -f k8s\00-namespace\20-limitrange.yaml
+kubectl config set-context --current --namespace=taches
+kubectl get namespace taches
+kubectl get resourcequota,limitrange
+```
+
+![Phase 2 – Namespace, ResourceQuota et LimitRange](docs/img/13-namespace-quota.png)
+
+
+### Phase 1 – Point de contrôle : l'image démarre sur le cluster
+
+```powershell
+kubectl run test --image=amal878/taches-api:1.0.0 --restart=Never -n default
+kubectl get pod test -o wide -n default
+kubectl logs test -n default
+kubectl delete pod test -n default
+```
+
+![Phase 1 – Point de contrôle : l'image démarre sur le cluster](docs/img/12-test-image-cluster.png)
+

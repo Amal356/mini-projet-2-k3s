@@ -34,3 +34,12 @@ docker context ls
 ![Phase 0 – Environnement](docs/img/01-environnement.png)
 
 
+
+### Phase 0 – Arborescence de l'application
+
+```powershell
+tree /F app
+```
+
+![Phase 0 – Arborescence de l'application](docs/img/02-arborescence-app.png)
+

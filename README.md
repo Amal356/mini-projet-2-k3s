@@ -8,20 +8,15 @@
 
 ---
 
-### Phase 0 – Création du dépôt Git et premier push
+### Phase 0 – Dépôt Git : fichiers versionnés et dépôt distant
 
 ```powershell
-git init
-git add .
 git ls-files
-git commit -m "Initialisation du projet"
-git branch -M main
-git remote add origin https://github.com/Amal356/Mini-projet-2.git
-git push -u origin main
 git status -sb
+git remote -v
 ```
 
-![Phase 0 – Création du dépôt Git et premier push](docs/img/00-git-push.png)
+![Phase 0 – Dépôt Git : fichiers versionnés et dépôt distant](docs/img/00-git-push.png)
 
 
 ### Phase 0 – Environnement
@@ -133,18 +128,16 @@ docker logs api
 ![Phase 1 – Test local de l'image : modification et suppression](docs/img/10-crud-modif-suppression.png)
 
 
-### Phase 1 – Nettoyage des tests et publication des images sur Docker Hub
+### Phase 1 – Publication des images sur Docker Hub
 
 ```powershell
-docker rm -f api pg
-docker network rm tp-net
 docker ps -a
 docker login -u $U
 docker push "$U/taches-api:1.0.0"
 docker push "$U/taches-frontend:1.0.0"
 ```
 
-![Phase 1 – Nettoyage des tests et publication des images sur Docker Hub](docs/img/11-push-images.png)
+![Phase 1 – Publication des images sur Docker Hub](docs/img/11-push-images.png)
 
 
 
@@ -205,4 +198,5 @@ kubectl delete pod test-defaults
 ```
 
 ![Phase 2 – Point de contrôle : valeurs par défaut du LimitRange](docs/img/15-test-defaults.png)
+
 

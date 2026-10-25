@@ -1,16 +1,6 @@
-FROM node:20-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install --omit=dev
-COPY server.js ./
-USER 1000:1000
-EXPOSE 3000
-CMD ["node",
-@'
 const express = require('express');
 const { Pool } = require('pg');
 
-// Toute la configuration vient des variables d'environnement
 const requises = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'API_PORT'];
 for (const nom of requises) {
   if (!process.env[nom]) {

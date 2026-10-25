@@ -90,3 +90,25 @@ docker images "$U/*"
 
 ![Phase 1 – Images construites et versionnées](docs/img/06-docker-images.png)
 
+
+### Phase 0 – Base PostgreSQL de test
+
+```powershell
+docker network create tp-net
+docker run -d --name pg --network tp-net -e POSTGRES_USER=app -e POSTGRES_PASSWORD=TestLocal123 -e POSTGRES_DB=taches postgres:16-alpine
+```
+
+![Phase 0 – Base PostgreSQL de test](docs/img/07-base-locale.png)
+
+
+### Phase 0 – Lancement local de l'API
+
+```powershell
+docker build -t "$U/taches-api:1.0.0" .\app\api
+docker run -d --name api --network tp-net -p 3000:3000 -e DB_HOST=pg -e DB_PORT=5432 -e DB_NAME=taches -e DB_USER=app -e DB_PASSWORD=TestLocal123 -e API_PORT=3000 "$U/taches-api:1.0.0"
+docker ps
+docker logs api
+```
+
+![Phase 0 – Lancement local de l'API](docs/img/08-api-locale.png)
+

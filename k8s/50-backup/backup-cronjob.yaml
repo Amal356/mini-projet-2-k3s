@@ -1,0 +1,49 @@
+﻿apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-backup
+  namespace: taches
+spec:
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: db-backup
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            fsGroup: 999
+            seccompProfile: { type: RuntimeDefault }
+          containers:
+          - name: pg-dump
+            image: postgres:16-alpine
+            command:
+            - sh
+            - -c
+            - |
+              FILENAME="/backup/db-$(date +%Y%m%d-%H%M%S).sql"
+              pg_dump -h db -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$FILENAME"
+              echo "Backup written to $FILENAME"
+            env:
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_USER } }
+            - name: PGPASSWORD
+              valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_PASSWORD } }
+            - name: POSTGRES_DB
+              valueFrom: { configMapKeyRef: { name: app-config, key: DB_NAME } }
+            volumeMounts:
+            - { name: backup, mountPath: /backup }
+            - { name: tmp, mountPath: /tmp }
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities: { drop: ["ALL"] }
+              readOnlyRootFilesystem: true
+          volumes:
+          - name: backup
+            persistentVolumeClaim: { claimName: backup-pvc }
+          - name: tmp
+            emptyDir: {}

@@ -1,0 +1,40 @@
+﻿apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+  namespace: taches
+spec:
+  serviceName: db
+  replicas: 1
+  selector:
+    matchLabels: { app: db }
+  template:
+    metadata:
+      labels: { app: db, tier: db }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_USER } }
+        - name: POSTGRES_PASSWORD
+          valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_PASSWORD } }
+        - name: POSTGRES_DB
+          valueFrom: { configMapKeyRef: { name: app-config, key: DB_NAME } }
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - { name: data, mountPath: /var/lib/postgresql/data }
+  volumeClaimTemplates:
+  - metadata: { name: data }
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources: { requests: { storage: 1Gi } }

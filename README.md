@@ -129,3 +129,33 @@ api GET /tasks
 
 ![Phase 0 – Test CRUD : santé, création et lecture](docs/img/09-crud-creation-lecture.png)
 
+
+### Phase 0 – Test CRUD : santé, création et lecture
+
+```powershell
+$Base = "http://192.168.56.10:3000"
+function api($methode, $chemin, $corps) {
+  $r = Invoke-WebRequest -UseBasicParsing -Method $methode -Uri "$Base$chemin" -ContentType 'application/json' -Body $corps
+  "$($r.StatusCode) $($r.Content)"
+}
+api GET /health
+api GET /ready
+api POST /tasks '{"titre":"Ma premiere tache"}'
+api GET /tasks
+```
+
+![Phase 0 – Test CRUD : santé, création et lecture](docs/img/09-crud-creation-lecture.png)
+
+
+### Phase 0 – Test CRUD : modification et suppression
+
+```powershell
+api PUT /tasks/1 '{"faite":true}'
+api GET /tasks
+api DELETE /tasks/1
+api GET /tasks
+docker logs api
+```
+
+![Phase 0 – Test CRUD : modification et suppression](docs/img/10-crud-modif-suppression.png)
+

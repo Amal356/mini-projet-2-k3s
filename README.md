@@ -5,3 +5,21 @@
 **Application :** gestionnaire de tâches (frontend nginx, API Node.js/Express, base PostgreSQL 16)
 
 ---
+
+### Phase 0 – Création du dépôt Git et premier push
+
+Dépôt créé depuis PowerShell. Le fichier .gitignore exclut les secrets (secret.yaml), node_modules et l'outil local tools.ps1 ; git ls-files le confirme (exigence E4).
+
+```powershell
+git init
+git add .
+git ls-files
+git commit -m "Initialisation du projet"
+git branch -M main
+git remote add origin https://github.com/Amal356/Mini-projet-2.git
+git push -u origin main
+git status -sb
+```
+
+![Phase 0 – Création du dépôt Git et premier push](docs/img/00-git-push.png)
+

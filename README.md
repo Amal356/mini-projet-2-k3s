@@ -141,18 +141,18 @@ docker push "$U/taches-frontend:1.0.0"
 
 
 
+
+
 ### Phase 1 – Point de contrôle : l'image démarre sur le cluster
 
 ```powershell
-kubectl run test --image=amal878/taches-api:1.0.0 --restart=Never
-kubectl get pod test -o wide
-kubectl logs test
-kubectl delete pod test
+kubectl run test --image=amal878/taches-api:1.0.0 --restart=Never -n default
+kubectl get pod test -o wide -n default
+kubectl logs test -n default
+kubectl delete pod test -n default
 ```
 
 ![Phase 1 – Point de contrôle : l'image démarre sur le cluster](docs/img/12-test-image-cluster.png)
-
-
 ### Phase 2 – Namespace, ResourceQuota et LimitRange
 
 ```powershell
@@ -167,16 +167,6 @@ kubectl get resourcequota,limitrange
 ![Phase 2 – Namespace, ResourceQuota et LimitRange](docs/img/13-namespace-quota.png)
 
 
-### Phase 1 – Point de contrôle : l'image démarre sur le cluster
-
-```powershell
-kubectl run test --image=amal878/taches-api:1.0.0 --restart=Never -n default
-kubectl get pod test -o wide -n default
-kubectl logs test -n default
-kubectl delete pod test -n default
-```
-
-![Phase 1 – Point de contrôle : l'image démarre sur le cluster](docs/img/12-test-image-cluster.png)
 
 
 ### Phase 2 – Détail du quota et des limites par défaut
@@ -198,5 +188,6 @@ kubectl delete pod test-defaults
 ```
 
 ![Phase 2 – Point de contrôle : valeurs par défaut du LimitRange](docs/img/15-test-defaults.png)
+
 
 

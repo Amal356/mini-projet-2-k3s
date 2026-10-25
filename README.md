@@ -43,3 +43,23 @@ tree /F app
 
 ![Phase 0 – Arborescence de l'application](docs/img/02-arborescence-app.png)
 
+
+### Phase 1 – Connexion à Docker Hub
+
+```powershell
+$U = "amal878"
+docker login -u $U
+```
+
+![Phase 1 – Connexion à Docker Hub](docs/img/03-docker-login.png)
+
+
+### Phase 1 – Connexion à Docker Hub
+
+```powershell
+$U = "amal878"
+docker login -u $U
+```
+
+![Phase 1 – Connexion à Docker Hub](docs/img/03-docker-login.png)
+

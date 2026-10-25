@@ -185,3 +185,24 @@ kubectl delete pod test -n default
 
 ![Phase 1 – Point de contrôle : l'image démarre sur le cluster](docs/img/12-test-image-cluster.png)
 
+
+### Phase 2 – Détail du quota et des limites par défaut
+
+```powershell
+kubectl describe quota taches-quota
+kubectl describe limitrange taches-limits
+```
+
+![Phase 2 – Détail du quota et des limites par défaut](docs/img/14-describe-quota-limitrange.png)
+
+
+### Phase 2 – Point de contrôle : valeurs par défaut du LimitRange
+
+```powershell
+kubectl run test-defaults --image=nginx:1.27-alpine --restart=Never
+kubectl get pod test-defaults -o jsonpath='{.spec.containers[0].resources}'
+kubectl delete pod test-defaults
+```
+
+![Phase 2 – Point de contrôle : valeurs par défaut du LimitRange](docs/img/15-test-defaults.png)
+

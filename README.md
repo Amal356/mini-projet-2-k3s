@@ -63,3 +63,30 @@ docker login -u $U
 
 ![Phase 1 – Connexion à Docker Hub](docs/img/03-docker-login.png)
 
+
+### Phase 1 – Construction de l'image de l'API
+
+```powershell
+docker build -t "$U/taches-api:1.0.0" .\app\api
+```
+
+![Phase 1 – Construction de l'image de l'API](docs/img/04-build-api.png)
+
+
+### Phase 1 – Construction de l'image du frontend
+
+```powershell
+docker build -t "$U/taches-frontend:1.0.0" .\app\frontend
+```
+
+![Phase 1 – Construction de l'image du frontend](docs/img/05-build-frontend.png)
+
+
+### Phase 1 – Images construites et versionnées
+
+```powershell
+docker images "$U/*"
+```
+
+![Phase 1 – Images construites et versionnées](docs/img/06-docker-images.png)
+

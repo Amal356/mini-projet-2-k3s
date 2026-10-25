@@ -191,3 +191,16 @@ kubectl delete pod test-defaults
 
 
 
+
+### Phase 4 – Base PostgreSQL en StatefulSet avec volume persistant
+
+La base tourne dans le Pod db-0 d'un StatefulSet. Son disque de 1 Gi (data-db-0, StorageClass local-path) est lié au Pod et survit à sa suppression. Le Service headless db donne à la base un nom stable.
+
+```powershell
+kubectl get statefulset,pod,svc,pvc -n taches -o wide
+kubectl describe pvc data-db-0 -n taches | Select-String "Status|Capacity|StorageClass|Used By"
+kubectl exec db-0 -n taches -- psql -U app -d taches -c '\conninfo'
+```
+
+![Phase 4 – Base PostgreSQL en StatefulSet avec volume persistant](docs/img/17-base-statefulset.png)
+

@@ -1,14 +1,14 @@
-# Mini-projet 2 – Application trois niveaux sécurisée et persistante
+﻿# Mini-projet 2 – Application trois niveaux sécurisée et persistante
 
 **Réalisé par :** Jemli Amal (2ème année Master DevOps et Cloud Computing, ISET Tozeur)
+
 **Environnement :** cluster k3s v1.36.4 (k3s-master, k3s-agent1, k3s-agent2). Toutes les commandes sont lancées depuis PowerShell (Windows) avec kubectl et le contexte Docker `k3s-master`.
+
 **Application :** gestionnaire de tâches (frontend nginx, API Node.js/Express, base PostgreSQL 16)
 
 ---
 
 ### Phase 0 – Création du dépôt Git et premier push
-
-Dépôt créé depuis PowerShell. Le fichier .gitignore exclut les secrets (secret.yaml), node_modules et l'outil local tools.ps1 ; git ls-files le confirme (exigence E4).
 
 ```powershell
 git init
@@ -81,17 +81,17 @@ docker images "$U/*"
 ![Phase 1 – Images construites et versionnées](docs/img/06-docker-images.png)
 
 
-### Phase 0 – Base PostgreSQL de test
+### Phase 1 – Test local de l'image : base PostgreSQL
 
 ```powershell
 docker network create tp-net
 docker run -d --name pg --network tp-net -e POSTGRES_USER=app -e POSTGRES_PASSWORD=TestLocal123 -e POSTGRES_DB=taches postgres:16-alpine
 ```
 
-![Phase 0 – Base PostgreSQL de test](docs/img/07-base-locale.png)
+![Phase 1 – Test local de l'image : base PostgreSQL](docs/img/07-base-locale.png)
 
 
-### Phase 0 – Lancement local de l'API
+### Phase 1 – Test local de l'image : lancement de l'API
 
 ```powershell
 docker build -t "$U/taches-api:1.0.0" .\app\api
@@ -100,10 +100,10 @@ docker ps
 docker logs api
 ```
 
-![Phase 0 – Lancement local de l'API](docs/img/08-api-locale.png)
+![Phase 1 – Test local de l'image : lancement de l'API](docs/img/08-api-locale.png)
 
 
-### Phase 0 – Test CRUD : santé, création et lecture
+### Phase 1 – Test local de l'image : santé, création et lecture
 
 ```powershell
 $Base = "http://192.168.56.10:3000"
@@ -117,10 +117,10 @@ api POST /tasks '{"titre":"Ma premiere tache"}'
 api GET /tasks
 ```
 
-![Phase 0 – Test CRUD : santé, création et lecture](docs/img/09-crud-creation-lecture.png)
+![Phase 1 – Test local de l'image : santé, création et lecture](docs/img/09-crud-creation-lecture.png)
 
 
-### Phase 0 – Test CRUD : modification et suppression
+### Phase 1 – Test local de l'image : modification et suppression
 
 ```powershell
 api PUT /tasks/1 '{"faite":true}'
@@ -130,7 +130,7 @@ api GET /tasks
 docker logs api
 ```
 
-![Phase 0 – Test CRUD : modification et suppression](docs/img/10-crud-modif-suppression.png)
+![Phase 1 – Test local de l'image : modification et suppression](docs/img/10-crud-modif-suppression.png)
 
 
 ### Phase 1 – Nettoyage des tests et publication des images sur Docker Hub
@@ -145,4 +145,5 @@ docker push "$U/taches-frontend:1.0.0"
 ```
 
 ![Phase 1 – Nettoyage des tests et publication des images sur Docker Hub](docs/img/11-push-images.png)
+
 

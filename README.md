@@ -159,3 +159,17 @@ docker logs api
 
 ![Phase 0 – Test CRUD : modification et suppression](docs/img/10-crud-modif-suppression.png)
 
+
+### Phase 1 – Nettoyage des tests et publication des images sur Docker Hub
+
+```powershell
+docker rm -f api pg
+docker network rm tp-net
+docker ps -a
+docker login -u $U
+docker push "$U/taches-api:1.0.0"
+docker push "$U/taches-frontend:1.0.0"
+```
+
+![Phase 1 – Nettoyage des tests et publication des images sur Docker Hub](docs/img/11-push-images.png)
+

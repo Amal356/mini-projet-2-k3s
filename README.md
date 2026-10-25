@@ -204,3 +204,16 @@ kubectl exec db-0 -n taches -- psql -U app -d taches -c '\conninfo'
 
 ![Phase 4 – Base PostgreSQL en StatefulSet avec volume persistant](docs/img/17-base-statefulset.png)
 
+
+### Phase 3 – ConfigMap et Secret
+
+Les réglages non sensibles sont dans le ConfigMap app-config. Les identifiants de la base sont dans le Secret db-credentials, créé directement dans le cluster et jamais versionné dans Git.
+
+```powershell
+kubectl get configmap app-config -n taches -o yaml
+kubectl get secret db-credentials -n taches
+kubectl get secret db-credentials -n taches -o jsonpath='{.data.POSTGRES_USER}' | ForEach-Object { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
+```
+
+![Phase 3 – ConfigMap et Secret](docs/img/16-configmap-secret.png)
+

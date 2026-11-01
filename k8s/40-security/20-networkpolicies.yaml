@@ -1,94 +1,135 @@
-﻿# 1. On bloque TOUT par défaut
+﻿# E14 : NetworkPolicies - a appliquer EN DERNIER.
+# Matrice : Traefik->frontend:8080 OUI | frontend->api:3000 OUI | api->db:5432 OUI
+#           backup->db:5432 OUI | frontend->db NON | autre Pod->api,db NON
+# Demarche : tout interdire (entrant ET sortant), puis ouvrir flux par flux. DNS autorise.
+
+# 1. Interdire tout le trafic entrant et sortant du namespace
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
-metadata: { name: default-deny, namespace: taches }
+metadata:
+  name: default-deny-all
+  namespace: taches
 spec:
   podSelector: {}
   policyTypes: ["Ingress", "Egress"]
 ---
-# 2. On autorise le DNS (sinon rien ne marche)
+# 2. DNS : tous les Pods peuvent interroger CoreDNS
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
-metadata: { name: allow-dns, namespace: taches }
+metadata:
+  name: allow-dns-egress
+  namespace: taches
 spec:
   podSelector: {}
   policyTypes: ["Egress"]
   egress:
-  - to:
-    - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } }
-    ports:
-    - { protocol: UDP, port: 53 }
-    - { protocol: TCP, port: 53 }
+    - to:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: kube-system }
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
 ---
-# 3. Traefik -> Frontend
+# 3. Traefik -> frontend
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
-metadata: { name: allow-frontend-ingress, namespace: taches }
+metadata:
+  name: allow-traefik-to-frontend
+  namespace: taches
 spec:
-  podSelector: { matchLabels: { app: frontend } }
+  podSelector:
+    matchLabels: { tier: frontend }
   policyTypes: ["Ingress"]
   ingress:
-  - from:
-    - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } }
-    ports: [{ protocol: TCP, port: 8080 }]
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: kube-system }
+      ports:
+        - { protocol: TCP, port: 8080 }
 ---
-# 4. Frontend -> API
+# 4. frontend -> api (entrant cote api)
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
-metadata: { name: frontend-to-api, namespace: taches }
+metadata:
+  name: allow-frontend-to-api
+  namespace: taches
 spec:
-  podSelector: { matchLabels: { app: api } }
+  podSelector:
+    matchLabels: { tier: api }
   policyTypes: ["Ingress"]
   ingress:
-  - from:
-    - podSelector: { matchLabels: { app: frontend } }
-    ports: [{ protocol: TCP, port: 3000 }]
+    - from:
+        - podSelector:
+            matchLabels: { tier: frontend }
+      ports:
+        - { protocol: TCP, port: 3000 }
 ---
-# 5. API et Backup -> DB
+# 5. api + sauvegarde -> db (entrant cote db)
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
-metadata: { name: api-to-db, namespace: taches }
+metadata:
+  name: allow-api-to-db
+  namespace: taches
 spec:
-  podSelector: { matchLabels: { app: db } }
+  podSelector:
+    matchLabels: { tier: db }
   policyTypes: ["Ingress"]
   ingress:
-  - from:
-    - podSelector: { matchLabels: { app: api } }
-    - podSelector: { matchLabels: { app: db-backup } }
-    ports: [{ protocol: TCP, port: 5432 }]
+    - from:
+        - podSelector:
+            matchLabels: { tier: api }
+        - podSelector:
+            matchLabels: { tier: backup }
+      ports:
+        - { protocol: TCP, port: 5432 }
 ---
-# 6. Frontend peut sortir (vers l'API)
+# 6. Sortant frontend -> api
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
-metadata: { name: frontend-egress, namespace: taches }
+metadata:
+  name: allow-frontend-egress
+  namespace: taches
 spec:
-  podSelector: { matchLabels: { app: frontend } }
+  podSelector:
+    matchLabels: { tier: frontend }
   policyTypes: ["Egress"]
   egress:
-  - to:
-    - podSelector: { matchLabels: { app: api } }
-    ports: [{ protocol: TCP, port: 3000 }]
+    - to:
+        - podSelector:
+            matchLabels: { tier: api }
+      ports:
+        - { protocol: TCP, port: 3000 }
 ---
-# 7. API peut sortir (vers la DB)
+# 7. Sortant api -> db
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
-metadata: { name: api-egress, namespace: taches }
+metadata:
+  name: allow-api-egress
+  namespace: taches
 spec:
-  podSelector: { matchLabels: { app: api } }
+  podSelector:
+    matchLabels: { tier: api }
   policyTypes: ["Egress"]
   egress:
-  - to:
-    - podSelector: { matchLabels: { app: db } }
-    ports: [{ protocol: TCP, port: 5432 }]
+    - to:
+        - podSelector:
+            matchLabels: { tier: db }
+      ports:
+        - { protocol: TCP, port: 5432 }
 ---
-# 8. Backup peut sortir (vers la DB)
+# 8. Sortant sauvegarde/restauration -> db
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
-metadata: { name: backup-egress, namespace: taches }
+metadata:
+  name: allow-backup-egress
+  namespace: taches
 spec:
-  podSelector: { matchLabels: { app: db-backup } }
+  podSelector:
+    matchLabels: { tier: backup }
   policyTypes: ["Egress"]
   egress:
-  - to:
-    - podSelector: { matchLabels: { app: db } }
-    ports: [{ protocol: TCP, port: 5432 }]
+    - to:
+        - podSelector:
+            matchLabels: { tier: db }
+      ports:
+        - { protocol: TCP, port: 5432 }

@@ -34,7 +34,7 @@ spec:
               command: ["/bin/sh", "-c"]
               args:
                 - |
-                  set -e
+                  set -e; for i in $(seq 1 30); do pg_isready -h db -p 5432 -U "$POSTGRES_USER" && break; sleep 2; done
                   FICHIER="/backup/dump-$(date +%Y%m%d-%H%M).sql"
                   pg_dump -h db -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists -f "$FICHIER"
                   echo "Sauvegarde ecrite : $FICHIER"

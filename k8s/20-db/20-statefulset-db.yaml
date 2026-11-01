@@ -1,40 +1,67 @@
-﻿apiVersion: apps/v1
+﻿# E5, E6, E8, E12, E13 : PostgreSQL en StatefulSet avec volume persistant
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: db
   namespace: taches
+  labels: { app: db, tier: db }
 spec:
   serviceName: db
   replicas: 1
   selector:
-    matchLabels: { app: db }
+    matchLabels: { app: db }          # champ immuable : ne pas modifier
   template:
     metadata:
       labels: { app: db, tier: db }
     spec:
+      serviceAccountName: db-sa
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: 999
+        runAsUser: 999                # proprietaire des fichiers du volume
         runAsGroup: 999
-        fsGroup: 999
+        fsGroup: 999                  # rend le volume inscriptible par 999
+        seccompProfile: { type: RuntimeDefault }
       containers:
-      - name: postgres
-        image: postgres:16-alpine
-        ports:
-        - containerPort: 5432
-        env:
-        - name: POSTGRES_USER
-          valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_USER } }
-        - name: POSTGRES_PASSWORD
-          valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_PASSWORD } }
-        - name: POSTGRES_DB
-          valueFrom: { configMapKeyRef: { name: app-config, key: DB_NAME } }
-        - name: PGDATA
-          value: /var/lib/postgresql/data/pgdata
-        volumeMounts:
-        - { name: data, mountPath: /var/lib/postgresql/data }
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_PASSWORD } }
+            - name: POSTGRES_DB
+              valueFrom: { configMapKeyRef: { name: app-config, key: DB_NAME } }
+            - name: PGDATA              # sous-dossier : evite l'echec sur un volume non vide
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -h 127.0.0.1 -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+            # Exception justifiee (docs/durcissement.md) : PostgreSQL ecrit son socket
+            # et ses fichiers de verrou hors du volume de donnees.
+            readOnlyRootFilesystem: false
+  # local-path = StorageClass par defaut de k3s. Champ immuable : identique au deploiement initial.
   volumeClaimTemplates:
-  - metadata: { name: data }
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      resources: { requests: { storage: 1Gi } }
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

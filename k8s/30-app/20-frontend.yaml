@@ -1,25 +1,57 @@
-﻿apiVersion: apps/v1
+﻿# E1, E8, E12, E13 : frontend nginx non-root (port 8080), relais /api/ -> api-svc
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
   namespace: taches
+  labels: { app: frontend, tier: frontend }
 spec:
   replicas: 2
   selector:
-    matchLabels: { app: frontend }
+    matchLabels: { app: frontend }     # champ immuable : ne pas modifier
   template:
     metadata:
       labels: { app: frontend, tier: frontend }
     spec:
+      serviceAccountName: frontend-sa
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101
+        runAsUser: 101                 # utilisateur "nginx" de nginx-unprivileged
+        runAsGroup: 101
+        seccompProfile: { type: RuntimeDefault }
       containers:
-      - name: frontend
-        image: tasks-frontend:1.0.0
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8080
-        readinessProbe:
-          httpGet: { path: /, port: 8080 }
-          initialDelaySeconds: 3
+        - name: frontend
+          image: tasks-frontend:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          readinessProbe:
+            httpGet: { path: /, port: 8080 }
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 200m, memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: nginx-conf                    # conf nginx venant du ConfigMap
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+            - { name: tmp, mountPath: /tmp }                 # pid et fichiers temporaires
+            - { name: cache, mountPath: /var/cache/nginx }   # cache nginx
+      volumes:
+        - name: nginx-conf
+          configMap: { name: frontend-nginx }
+        - name: tmp
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}

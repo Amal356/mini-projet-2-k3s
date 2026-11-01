@@ -1,0 +1,26 @@
+﻿# Configuration nginx du frontend, montee en fichier (subPath).
+# Le frontend relaie /api/ vers l'API a l'interieur du cluster : l'API n'est jamais exposee.
+# Apres modification : kubectl rollout restart deployment/frontend -n taches
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-nginx
+  namespace: taches
+data:
+  default.conf: |
+    # Conf issue du ConfigMap frontend-nginx
+    server {
+      listen 8080;
+
+      location / {
+        root /usr/share/nginx/html;
+        try_files $uri /index.html;
+      }
+
+      # Les appels /api/ sont relayes vers l'API (Service api-svc, port 3000)
+      location /api/ {
+        proxy_pass http://api-svc:3000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+      }
+    }

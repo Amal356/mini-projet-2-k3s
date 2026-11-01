@@ -1,46 +1,70 @@
-﻿apiVersion: apps/v1
+﻿# E1, E7, E8, E9, E12, E13 : API Node.js (2 replicas)
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api
   namespace: taches
+  labels: { app: api, tier: api }
 spec:
   replicas: 2
   selector:
-    matchLabels: { app: api }
+    matchLabels: { app: api }          # champ immuable : ne pas modifier
   template:
     metadata:
       labels: { app: api, tier: api }
     spec:
+      serviceAccountName: api-sa
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
+        runAsUser: 1000                # utilisateur "node" de l'image
+        runAsGroup: 1000
         seccompProfile: { type: RuntimeDefault }
+      # E7 : l'API ne demarre qu'une fois la base joignable
       initContainers:
-      - name: wait-for-db
-        image: busybox:1.36
-        command: ['sh', '-c', 'until nc -z -w 2 db 5432; do echo waiting for db; sleep 2; done;']
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities: { drop: ["ALL"] }
+        - name: wait-for-db
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z -w 2 db 5432; do echo attente de la base; sleep 2; done; echo base joignable"]
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { cpu: 50m, memory: 32Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+            readOnlyRootFilesystem: true
       containers:
-      - name: api
-        image: tasks-api:1.0.0
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 3000
-        envFrom:
-        - configMapRef: { name: app-config }
-        env:
-        - name: DB_USER
-          valueFrom: { secretKeyRef: { name: db-credentials, key: DB_USER } }
-        - name: DB_PASSWORD
-          valueFrom: { secretKeyRef: { name: db-credentials, key: DB_PASSWORD } }
-        readinessProbe:
-          httpGet: { path: /ready, port: 3000 }
-          initialDelaySeconds: 5
-        livenessProbe:
-          httpGet: { path: /health, port: 3000 }
-          initialDelaySeconds: 15
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities: { drop: ["ALL"] }
+        - name: api
+          image: tasks-api:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: http
+          envFrom:
+            - configMapRef: { name: app-config }
+          env:
+            - name: DB_USER
+              valueFrom: { secretKeyRef: { name: db-credentials, key: DB_USER } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: db-credentials, key: DB_PASSWORD } }
+          readinessProbe:              # E9 : pas de trafic tant que la base ne repond pas
+            httpGet: { path: /ready, port: 3000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:               # E9 : redemarrage si le processus ne repond plus
+            httpGet: { path: /health, port: 3000 }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 300m, memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: {}

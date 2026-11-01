@@ -1,0 +1,68 @@
+﻿# E11 : RESTAURATION - a lancer a la main uniquement (pas applique avec le dossier 20-db).
+#   kubectl delete job db-restore -n taches --ignore-not-found
+#   kubectl apply -f k8s/20-db/restore/db-restore-job.yaml
+#   kubectl logs -n taches job/db-restore -f
+# Par defaut : dump le plus recent. Pour un dump precis : renseigner DUMP (ex. dump-20261101-1712.sql).
+# Le label app=db-backup / tier=backup fait que la NetworkPolicy l'autorise a joindre la base.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-restore
+  namespace: taches
+  labels: { app: db-backup, tier: backup }
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels: { app: db-backup, tier: backup }
+    spec:
+      serviceAccountName: backup-sa
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: restore
+          image: postgres:16-alpine
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              # attente : la NetworkPolicy met quelques secondes a autoriser un Pod nouvellement cree
+              for i in $(seq 1 30); do
+                pg_isready -h db -p 5432 -U "$POSTGRES_USER" && break
+                echo "attente de la base ($i/30)"; sleep 2
+              done
+              if [ -n "$DUMP" ]; then FICHIER="/backup/$DUMP"; else FICHIER=$(ls -1t /backup/dump-*.sql | head -n 1); fi
+              echo "Restauration depuis : $FICHIER"
+              psql -h db -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -f "$FICHIER"
+              echo "Restauration terminee"
+          env:
+            - name: DUMP
+              value: ""
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_USER } }
+            - name: PGPASSWORD
+              valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_PASSWORD } }
+            - name: POSTGRES_DB
+              valueFrom: { configMapKeyRef: { name: app-config, key: DB_NAME } }
+          volumeMounts:
+            - { name: backup, mountPath: /backup, readOnly: true }
+            - { name: tmp, mountPath: /tmp }
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 200m, memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+            readOnlyRootFilesystem: true
+      volumes:
+        - name: backup
+          persistentVolumeClaim: { claimName: backup-pvc }
+        - name: tmp
+          emptyDir: {}

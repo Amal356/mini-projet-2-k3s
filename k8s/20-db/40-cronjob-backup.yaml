@@ -1,49 +1,65 @@
-﻿apiVersion: batch/v1
+﻿# E11 : sauvegarde automatique toutes les 5 minutes (valeur de demonstration)
+# --clean --if-exists : le dump supprime puis recree les tables -> restauration directe avec psql
+# Test immediat : kubectl create job --from=cronjob/db-backup test-backup -n taches
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: db-backup
   namespace: taches
+  labels: { app: db-backup, tier: backup }
 spec:
   schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
+      backoffLimit: 2
       template:
         metadata:
-          labels:
-            app: db-backup
+          labels: { app: db-backup, tier: backup }   # labels autorises par la NetworkPolicy de la base
         spec:
+          serviceAccountName: backup-sa
+          automountServiceAccountToken: false
           restartPolicy: OnFailure
           securityContext:
             runAsNonRoot: true
             runAsUser: 999
+            runAsGroup: 999
             fsGroup: 999
             seccompProfile: { type: RuntimeDefault }
           containers:
-          - name: pg-dump
-            image: postgres:16-alpine
-            command:
-            - sh
-            - -c
-            - |
-              FILENAME="/backup/db-$(date +%Y%m%d-%H%M%S).sql"
-              pg_dump -h db -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$FILENAME"
-              echo "Backup written to $FILENAME"
-            env:
-            - name: POSTGRES_USER
-              valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_USER } }
-            - name: PGPASSWORD
-              valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_PASSWORD } }
-            - name: POSTGRES_DB
-              valueFrom: { configMapKeyRef: { name: app-config, key: DB_NAME } }
-            volumeMounts:
-            - { name: backup, mountPath: /backup }
-            - { name: tmp, mountPath: /tmp }
-            securityContext:
-              allowPrivilegeEscalation: false
-              capabilities: { drop: ["ALL"] }
-              readOnlyRootFilesystem: true
+            - name: pg-dump
+              image: postgres:16-alpine
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -e
+                  FICHIER="/backup/dump-$(date +%Y%m%d-%H%M).sql"
+                  pg_dump -h db -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists -f "$FICHIER"
+                  echo "Sauvegarde ecrite : $FICHIER"
+                  # retention : suppression des dumps de plus de 2 heures
+                  find /backup -name '*.sql' -mmin +120 -delete
+                  ls -lh /backup
+              env:
+                - name: POSTGRES_USER
+                  valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_USER } }
+                - name: PGPASSWORD            # variable lue automatiquement par pg_dump
+                  valueFrom: { secretKeyRef: { name: db-credentials, key: POSTGRES_PASSWORD } }
+                - name: POSTGRES_DB
+                  valueFrom: { configMapKeyRef: { name: app-config, key: DB_NAME } }
+              volumeMounts:
+                - { name: backup, mountPath: /backup }
+                - { name: tmp, mountPath: /tmp }
+              resources:
+                requests: { cpu: 50m, memory: 64Mi }
+                limits: { cpu: 200m, memory: 128Mi }
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities: { drop: ["ALL"] }
+                readOnlyRootFilesystem: true
           volumes:
-          - name: backup
-            persistentVolumeClaim: { claimName: backup-pvc }
-          - name: tmp
-            emptyDir: {}
+            - name: backup
+              persistentVolumeClaim: { claimName: backup-pvc }
+            - name: tmp
+              emptyDir: {}

@@ -178,20 +178,20 @@ kubectl delete pod test-netpol -n taches
 
 | N° | Exigence | Réalisation | Preuves (`preuves/`) |
 |---|---|---|---|
-| E1 | Images versionnées, accessibles à tous les nœuds | `tasks-api:1.0.0`, `tasks-frontend:1.0.0` importées sur chaque nœud (pas de `latest`) | `01-E1-image-versionnee`, `10-E9-pods` (Pods sur agent1 et agent2) |
-| E2 | Namespace + ResourceQuota + LimitRange | `taches`, `taches-quota`, `taches-limits` | `02-E2-namespace`, `03-E2-quota`, `04-E8-limitrange` |
-| E3 | ConfigMap + Secret | `app-config` ; `db-credentials` | `05-E3-configmap` |
-| E4 | Aucun secret réel dans Git | `secret.example.yaml` factice, `secret.yaml` ignoré | `19-E4-git-status` |
-| E5 | StatefulSet + volumeClaimTemplates + Service headless | `db`, PVC `data-db-0` 1 Gi, `clusterIP: None`, readiness `pg_isready` | `08-E5-db-statefulset` |
-| E6 | Données conservées après suppression du Pod | `db-0` supprimé puis recréé, données intactes | `13-E6-persistance` |
-| E7 | L'API attend la base | initContainer `wait-for-db` + readiness `/ready` | `09-E7-api-probes` |
-| E8 | `requests` / `limits` sur chaque conteneur | API, init, frontend, db, sauvegarde, restauration | `20-E8-resources` |
-| E9 | Readiness `/ready`, liveness `/health` | sur l'API (et sondes HTTP du frontend) | `09-E7-api-probes`, `10-E9-pods` |
-| E10 | Seul le frontend exposé sur `app.k3s.local` | Ingress `tasks-ingress` → `frontend-svc` | `11-E10-ingress`, `12-E10-navigateur` |
-| E11 | CronJob de sauvegarde + restauration testée | `db-backup` (*/5) + Job `db-restore` | `21a` à `21d` |
-| E12 | ServiceAccounts sans jeton + compte de consultation | `api-sa`, `frontend-sa`, `db-sa`, `backup-sa` ; `dev-viewer` (get/list/watch sur pods, logs, services) | `22-E12-serviceaccounts`, `23-E12-auth-can-i` |
-| E13 | Non-root, pas d'élévation, capabilities supprimées | voir [`docs/durcissement.md`](docs/durcissement.md) ; conforme au profil `restricted` | `24-E13-securitycontext`, `25-E13-psa-restricted` |
-| E14 | NetworkPolicies conformes à la matrice | deny-all + 7 autorisations (section 6) | `16-E14-netpol-liste`, `26-E14-api-vers-db-ok`, `27-E14-test-bloque`, `18-E14-app-toujours-ok` |
+| E1 | Images versionnées, accessibles à tous les nœuds | `tasks-api:1.0.0`, `tasks-frontend:1.0.0` importées sur chaque nœud (pas de `latest`) | [`01-E1-image-versionnee`](preuves/01-E1-image-versionnee.png), [`10-E9-pods`](preuves/10-E9-pods.png) (Pods sur agent1 et agent2) |
+| E2 | Namespace + ResourceQuota + LimitRange | `taches`, `taches-quota`, `taches-limits` | [`02-E2-namespace`](preuves/02-E2-namespace.png), [`03-E2-quota`](preuves/03-E2-quota.png), [`04-E8-limitrange`](preuves/04-E8-limitrange.png) |
+| E3 | ConfigMap + Secret | `app-config` ; `db-credentials` | [`05-E3-configmap`](preuves/05-E3-configmap.png) |
+| E4 | Aucun secret réel dans Git | `secret.example.yaml` factice, `secret.yaml` ignoré | [`19-E4-git-status`](preuves/19-E4-git-status.png) |
+| E5 | StatefulSet + volumeClaimTemplates + Service headless | `db`, PVC `data-db-0` 1 Gi, `clusterIP: None`, readiness `pg_isready` | [`08-E5-db-statefulset`](preuves/08-E5-db-statefulset.png) |
+| E6 | Données conservées après suppression du Pod | `db-0` supprimé puis recréé, données intactes | [`13-E6-persistance`](preuves/13-E6-persistance.png) |
+| E7 | L'API attend la base | initContainer `wait-for-db` + readiness `/ready` | [`09-E7-api-probes`](preuves/09-E7-api-probes.png) |
+| E8 | `requests` / `limits` sur chaque conteneur | API, init, frontend, db, sauvegarde, restauration | [`20-E8-resources`](preuves/20-E8-resources.png) |
+| E9 | Readiness `/ready`, liveness `/health` | sur l'API (et sondes HTTP du frontend) | [`09-E7-api-probes`](preuves/09-E7-api-probes.png), [`10-E9-pods`](preuves/10-E9-pods.png) |
+| E10 | Seul le frontend exposé sur `app.k3s.local` | Ingress `tasks-ingress` → `frontend-svc` | [`11-E10-ingress`](preuves/11-E10-ingress.png), [`12-E10-navigateur`](preuves/12-E10-navigateur.png) |
+| E11 | CronJob de sauvegarde + restauration testée | `db-backup` (*/5) + Job `db-restore` | [`21a`](preuves/21a-E11-sauvegarde.png) à [`21d`](preuves/21d-E11-donnee-restauree.png) |
+| E12 | ServiceAccounts sans jeton + compte de consultation | `api-sa`, `frontend-sa`, `db-sa`, `backup-sa` ; `dev-viewer` (get/list/watch sur pods, logs, services) | [`22-E12-serviceaccounts`](preuves/22-E12-serviceaccounts.png), [`23-E12-auth-can-i`](preuves/23-E12-auth-can-i.png) |
+| E13 | Non-root, pas d'élévation, capabilities supprimées | voir [`docs/durcissement.md`](docs/durcissement.md) ; conforme au profil `restricted` | [`24-E13-securitycontext`](preuves/24-E13-securitycontext.png), [`25-E13-psa-restricted`](preuves/25-E13-psa-restricted.png) |
+| E14 | NetworkPolicies conformes à la matrice | deny-all + 7 autorisations (section 6) | [`16-E14-netpol-liste`](preuves/16-E14-netpol-liste.png), [`26-E14-api-vers-db-ok`](preuves/26-E14-api-vers-db-ok.png), [`27-E14-test-bloque`](preuves/27-E14-test-bloque.png), [`18-E14-app-toujours-ok`](preuves/18-E14-app-toujours-ok.png) |
 | E15 | Dépôt rangé + README | dossiers `00` à `40-security`, ce document | — |
 
 ---
@@ -205,3 +205,91 @@ kubectl delete pod test-netpol -n taches
 - **Configuration nginx cachée dans l'image** : la règle `/api/ → api-svc` était intégrée à l'image. Elle est maintenant dans le ConfigMap `frontend-nginx`, monté en `subPath`.
 - **Restauration refusée juste après la création du Pod** (`Connection refused`) : la NetworkPolicy met quelques secondes à autoriser un Pod neuf. Ajout d'une boucle `pg_isready -U ...` avant `psql` et `pg_dump`. Sans `-U`, `pg_isready` répondait `no attempt`, car l'uid 999 n'a pas de nom d'utilisateur.
 - **Sortie de `kubectl run -it --rm` perdue** : le test de blocage est lancé sans `-it`, puis lu avec `kubectl logs`.
+
+---
+
+## 9. Captures (preuves E1 à E15)
+
+### E1 — Images versionnées
+
+![01-E1-image-versionnee](preuves/01-E1-image-versionnee.png)
+
+### E2 — Namespace, ResourceQuota, LimitRange
+
+![02-E2-namespace](preuves/02-E2-namespace.png)
+
+![03-E2-quota](preuves/03-E2-quota.png)
+
+![04-E8-limitrange](preuves/04-E8-limitrange.png)
+
+### E3 — ConfigMap
+
+![05-E3-configmap](preuves/05-E3-configmap.png)
+
+### E4 — Aucun secret dans Git
+
+![19-E4-git-status](preuves/19-E4-git-status.png)
+
+### E5 — Base en StatefulSet
+
+![08-E5-db-statefulset](preuves/08-E5-db-statefulset.png)
+
+### E6 — Persistance après suppression du Pod
+
+![13-E6-persistance](preuves/13-E6-persistance.png)
+
+### E7 / E9 — initContainer et sondes
+
+![09-E7-api-probes](preuves/09-E7-api-probes.png)
+
+![10-E9-pods](preuves/10-E9-pods.png)
+
+### E8 — requests et limits
+
+![20-E8-resources](preuves/20-E8-resources.png)
+
+### E10 — Ingress
+
+![11-E10-ingress](preuves/11-E10-ingress.png)
+
+![12-E10-navigateur](preuves/12-E10-navigateur.png)
+
+### E11 — Sauvegarde et restauration
+
+**1. Sauvegarde manuelle**
+
+![1. Sauvegarde manuelle](preuves/21a-E11-sauvegarde.png)
+
+**2. Tâche « Planifier » supprimée**
+
+![2. Tâche « Planifier » supprimée](preuves/21b-E11-donnee-supprimee.png)
+
+**3. Restauration du dump 1719 (COPY 5)**
+
+![3. Restauration du dump 1719 (COPY 5)](preuves/21c-E11-restauration-logs.png)
+
+**4. La tâche est revenue**
+
+![4. La tâche est revenue](preuves/21d-E11-donnee-restauree.png)
+
+### E12 — ServiceAccounts et RBAC
+
+![22-E12-serviceaccounts](preuves/22-E12-serviceaccounts.png)
+
+![23-E12-auth-can-i](preuves/23-E12-auth-can-i.png)
+
+### E13 — Durcissement et Pod Security
+
+![24-E13-securitycontext](preuves/24-E13-securitycontext.png)
+
+![25-E13-psa-restricted](preuves/25-E13-psa-restricted.png)
+
+### E14 — NetworkPolicies
+
+![16-E14-netpol-liste](preuves/16-E14-netpol-liste.png)
+
+![26-E14-api-vers-db-ok](preuves/26-E14-api-vers-db-ok.png)
+
+![27-E14-test-bloque](preuves/27-E14-test-bloque.png)
+
+![18-E14-app-toujours-ok](preuves/18-E14-app-toujours-ok.png)

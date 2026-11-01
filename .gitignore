@@ -1,3 +1,10 @@
+# E4 : les vrais secrets ne sont jamais versionnes
 secret.yaml
+**/secret.yaml
+.env
+
+# images exportees et sauvegardes locales
 *.tar
 backup-taches/
+*.sql
+node_modules/
